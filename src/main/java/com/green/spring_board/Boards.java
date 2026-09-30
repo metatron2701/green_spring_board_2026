@@ -1,9 +1,17 @@
 package com.green.spring_board;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "boards")
+@AllArgsConstructor // 파라미터를 자동으로 만들어주는 놈
+@NoArgsConstructor // 생성자를 자동으로 만들어주는 놈
+@Getter // getter 함수들을 자동으로 만들어주는 놈
+@Setter // setter 함수들을 자동으로 만들어주는 놈
 public class Boards {
     @Id // SQL의 PRIMARY KEY와 같음
     @GeneratedValue(strategy = GenerationType.IDENTITY) // SQL의 AUTO_INCREMENT와 같음
@@ -15,35 +23,6 @@ public class Boards {
     @Column(nullable = false)
     private String content;
 
-    public Boards() {}
-
-    public Boards(int id, String title, String content) {
-        this.id = id;
-        this.title = title;
-        this.content = content;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-    }
+    @Column(nullable = false)
+    private int hits;
 }
