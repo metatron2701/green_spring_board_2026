@@ -41,6 +41,7 @@ public class BoardController {
             return ResponseEntity.notFound().build();
         } catch (Exception e){
             // 위에도 아니면, 무조건 Java 아니면 DB 에러로 서버 에러 (500)
+            e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -73,6 +74,7 @@ public class BoardController {
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -86,6 +88,7 @@ public class BoardController {
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
     }

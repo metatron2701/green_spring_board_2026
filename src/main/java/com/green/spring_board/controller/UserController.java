@@ -3,13 +3,10 @@ package com.green.spring_board.controller;
 import com.green.spring_board.dto.LoginRequest;
 import com.green.spring_board.dto.MyInfoResponse;
 import com.green.spring_board.dto.SignupRequest;
-import com.green.spring_board.entity.User;
 import com.green.spring_board.exceptions.ResourceConflictException;
 import com.green.spring_board.exceptions.ResourceNotFoundException;
 import com.green.spring_board.exceptions.UnauthenticatedException;
 import com.green.spring_board.exceptions.UserRequestException;
-import com.green.spring_board.repository.UserRepository;
-import com.green.spring_board.service.BoardService;
 import com.green.spring_board.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -17,15 +14,11 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-
 @RestController
 @RequestMapping("/api/user")
 @AllArgsConstructor
 public class UserController {
     private final UserService userService;
-    private final UserRepository userRepository;
-    private final BoardService boardService;
 
     @PostMapping("/signup")
     public ResponseEntity<Void> signup(@RequestBody SignupRequest signupRequest) {
@@ -37,6 +30,7 @@ public class UserController {
         } catch (UserRequestException e){
             return ResponseEntity.badRequest().build();
         } catch (Exception e){
+            e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -58,6 +52,7 @@ public class UserController {
         }catch (UnauthenticatedException e){
             return ResponseEntity.status(401).build();
         }catch (Exception e){
+            e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
     }
