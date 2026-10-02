@@ -36,10 +36,10 @@ public class BoardService {
     }
 
     public int createBoard(BoardCreateRequest boardCreateRequest) {
-        if (boardCreateRequest.getTitle() == null || boardCreateRequest.getTitle().isBlank()) {
+        if(boardCreateRequest.getTitle() == null || boardCreateRequest.getTitle().isBlank()){
             throw new UserRequestException("잘못된 입력값 입니다.");
         }
-        if (boardCreateRequest.getContent() == null || boardCreateRequest.getContent().isBlank()) {
+        if(boardCreateRequest.getContent() == null || boardCreateRequest.getContent().isBlank()){
             throw new UserRequestException("잘못된 입력값 입니다.");
         }
 
@@ -54,18 +54,20 @@ public class BoardService {
 
     public void updateBoard(int id, BoardCreateRequest boardCreateRequest) {
         Optional<Board> optionalBoards = boardRepository.findById(id);
-        if (optionalBoards.isEmpty()) {
+        if(optionalBoards.isEmpty()) {
             // 게시글을 못 찾은 경우
             throw new ResourceNotFoundException("게시글을 찾을 수 없습니다.");
         }
         Board board = optionalBoards.get();
 
-        if (boardCreateRequest.getTitle() != null && !boardCreateRequest.getTitle().isBlank()) {
+        if(boardCreateRequest.getTitle() == null || boardCreateRequest.getTitle().isBlank()) {
             board.setTitle(boardCreateRequest.getTitle());
         }
-        if (boardCreateRequest.getContent() != null && !boardCreateRequest.getContent().isBlank()) {
+
+        if(boardCreateRequest.getContent() != null && !boardCreateRequest.getContent().isBlank()) {
             board.setContent(boardCreateRequest.getContent());
         }
+
         boardRepository.save(board);
     }
 

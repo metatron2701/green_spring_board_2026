@@ -21,7 +21,7 @@ public class BoardController {
 
     // 전체 조회
     @GetMapping
-    public ResponseEntity<List<Board>> getBoards() {
+    public ResponseEntity<List<Board>> getBoards(){
         return ResponseEntity.ok(
             boardService.getAllBoards()
         );
@@ -29,7 +29,7 @@ public class BoardController {
 
     // 상세 조회
     @GetMapping("/{id}")
-    public ResponseEntity<Board> getBoardDetail(@PathVariable int id) {
+    public ResponseEntity<Board> getBoardDetail(@PathVariable int id){
         try {
             Board board = boardService.getBoard(id);
             if(board == null){
@@ -65,7 +65,7 @@ public class BoardController {
     public ResponseEntity<Void> updateBoard(
             @PathVariable int id,
             @RequestBody BoardCreateRequest boardCreateRequest
-    ) {
+    ){
         try{
             boardService.updateBoard(id, boardCreateRequest);
             return ResponseEntity.ok().build();
@@ -78,8 +78,8 @@ public class BoardController {
 
     // 삭제
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBoard(@PathVariable int id) {
-        try {
+    public ResponseEntity<Void> deleteBoard(@PathVariable int id){
+        try{
             boardService.deleteBoard(id);
             return ResponseEntity.noContent().build();
         } catch (ResourceNotFoundException e) {
