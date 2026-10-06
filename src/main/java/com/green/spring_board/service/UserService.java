@@ -3,6 +3,7 @@ package com.green.spring_board.service;
 import com.green.spring_board.dto.LoginRequest;
 import com.green.spring_board.dto.MyInfoResponse;
 import com.green.spring_board.dto.SignupRequest;
+import com.green.spring_board.dto.UserUpdateRequedst;
 import com.green.spring_board.entity.User;
 import com.green.spring_board.exceptions.ResourceConflictException;
 import com.green.spring_board.exceptions.ResourceNotFoundException;
@@ -86,24 +87,24 @@ public class UserService {
         return myInfoResponse;
     }
 
-    public void updateUserInfo(int userId, MyInfoResponse myInfoResponse) {
+    public void updateUserInfo(int userId, UserUpdateRequedst userUpdateRequedst) {
         Optional<User> userOptional = userRepository.findById(userId);
         if(userOptional.isEmpty()){
             throw new ResourceNotFoundException("User not found");
         }
         User user = userOptional.get();
 
-        if(myInfoResponse.getEmail()!=null
-                && !myInfoResponse.getEmail().isBlank()
-                && !myInfoResponse.getEmail().equals(user.getEmail())
+        if(userUpdateRequedst.getEmail()!=null
+                && !userUpdateRequedst.getEmail().isBlank()
+                && !userUpdateRequedst.getEmail().equals(user.getEmail())
         ){
-            user.setEmail(myInfoResponse.getEmail());
+            user.setEmail(userUpdateRequedst.getEmail());
         }
 
-        if(myInfoResponse.getNickname()!=null
-                && !myInfoResponse.getNickname().isBlank()
+        if(userUpdateRequedst.getNickname()!=null
+                && !userUpdateRequedst.getNickname().isBlank()
         ) {
-            user.setNickname(myInfoResponse.getNickname());
+            user.setNickname(userUpdateRequedst.getNickname());
         }
         userRepository.save(user);
     }

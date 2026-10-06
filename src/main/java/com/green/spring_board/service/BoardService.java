@@ -1,13 +1,19 @@
 package com.green.spring_board.service;
 
+import com.green.spring_board.dto.BoardResponse;
+import com.green.spring_board.dto.BoardUpdateRequest;
+import com.green.spring_board.entity.User;
 import com.green.spring_board.exceptions.ResourceNotFoundException;
+import com.green.spring_board.exceptions.UnauthenticatedException;
 import com.green.spring_board.exceptions.UserRequestException;
 import com.green.spring_board.dto.BoardCreateRequest;
 import com.green.spring_board.repository.BoardRepository;
 import com.green.spring_board.entity.Board;
+import com.green.spring_board.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,14 +21,32 @@ import java.util.Optional;
 @AllArgsConstructor
 public class BoardService {
     private BoardRepository boardRepository;
+    private UserRepository userRepository;
 
     // 전체 조회
-    public List<Board> getAllBoards() {
-        return boardRepository.findAll();
+    public List<BoardResponse> getAllBoards() {
+        List<BoardResponse> boardResponses = new ArrayList<>();
+
+        for (Board board : boardRepository.findAll()) {
+            boardResponses.add(
+                    new BoardResponse(
+                            board.getId(),
+                            board.getTitle(),
+                            board.getContent(),
+                            board.getHits(),
+                            board.getUser().getId(),
+                            board.getUser().getNickname(),
+                            board.getCreatedDatetime(),
+                            board.getUpdatedDatetime()
+                    )
+            );
+        }
+
+        return boardResponses;
     }
 
     // 상세 조회
-    public Board getBoard(int id) {
+    public BoardResponse getBoard(int id) {
         Optional<Board> optionalBoard = boardRepository.findById(id);
         if(optionalBoard.isEmpty()) {
             // 요청한 게시글을 찾지 못한 경우
@@ -32,27 +56,42 @@ public class BoardService {
 
         board.setHits(board.getHits() + 1);
         boardRepository.save(board);
-        return board;
+        return new BoardResponse(
+                board.getId(),
+                board.getTitle(),
+                board.getContent(),
+                board.getHits(),
+                board.getUser().getId(),
+                board.getUser().getNickname(),
+                board.getCreatedDatetime(),
+                board.getUpdatedDatetime()
+        );
     }
 
-    public int createBoard(BoardCreateRequest boardCreateRequest) {
-        if(boardCreateRequest.getTitle() == null || boardCreateRequest.getTitle().isBlank()){
+    public int createBoard(BoardCreateRequest boardCreateRequest, Integer userId) {
+        if (boardCreateRequest.getTitle() != null && !boardCreateRequest.getTitle().isBlank()){
             throw new UserRequestException("잘못된 입력값 입니다.");
         }
-        if(boardCreateRequest.getContent() == null || boardCreateRequest.getContent().isBlank()){
+        if(boardCreateRequest.getContent() != null && !boardCreateRequest.getContent().isBlank()) {
             throw new UserRequestException("잘못된 입력값 입니다.");
+        }
+
+        Optional<User> user = userRepository.findById(userId);
+        if(user.isEmpty()) {
+            throw new UnauthenticatedException("로그인한 사용자를 찾을 수 없습니다.");
         }
 
         Board board = new Board();
         board.setTitle(boardCreateRequest.getTitle());
         board.setContent(boardCreateRequest.getContent());
+        board.setUser(user.get());
 
         Board savedBoard = boardRepository.save(board);
 
         return savedBoard.getId();
     }
 
-    public void updateBoard(int id, BoardCreateRequest boardCreateRequest) {
+    public void updateBoard(int id, BoardUpdateRequest boardUpdateRequest) {
         Optional<Board> optionalBoards = boardRepository.findById(id);
         if(optionalBoards.isEmpty()) {
             // 게시글을 못 찾은 경우
@@ -60,12 +99,12 @@ public class BoardService {
         }
         Board board = optionalBoards.get();
 
-        if(boardCreateRequest.getTitle() == null || boardCreateRequest.getTitle().isBlank()) {
-            board.setTitle(boardCreateRequest.getTitle());
+        if(boardUpdateRequest.getTitle() != null && !boardUpdateRequest.getTitle().isBlank()) {
+            board.setTitle(boardUpdateRequest.getTitle());
         }
 
-        if(boardCreateRequest.getContent() != null && !boardCreateRequest.getContent().isBlank()) {
-            board.setContent(boardCreateRequest.getContent());
+        if(boardUpdateRequest.getContent() != null && !boardUpdateRequest.getContent().isBlank()) {
+            board.setContent(boardUpdateRequest.getContent());
         }
 
         boardRepository.save(board);

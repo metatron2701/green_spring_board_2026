@@ -3,6 +3,7 @@ package com.green.spring_board.controller;
 import com.green.spring_board.dto.LoginRequest;
 import com.green.spring_board.dto.MyInfoResponse;
 import com.green.spring_board.dto.SignupRequest;
+import com.green.spring_board.dto.UserUpdateRequedst;
 import com.green.spring_board.exceptions.ResourceConflictException;
 import com.green.spring_board.exceptions.ResourceNotFoundException;
 import com.green.spring_board.exceptions.UnauthenticatedException;
@@ -10,6 +11,7 @@ import com.green.spring_board.exceptions.UserRequestException;
 import com.green.spring_board.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +23,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/signup")
-    public ResponseEntity<Void> signup(@RequestBody SignupRequest signupRequest) {
+    public ResponseEntity<Void> signup(@Valid @RequestBody SignupRequest signupRequest) {
         try{
             userService.signup(signupRequest);
             return ResponseEntity.ok().build();
@@ -37,7 +39,7 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<Void> login(
-            @RequestBody LoginRequest loginRequest,
+            @Valid @RequestBody LoginRequest loginRequest,
             HttpServletRequest httpServletRequest
     ){
         try{
@@ -70,16 +72,16 @@ public class UserController {
 
         // 2. 세션에서 유저 아이디 뽑아옴
         int userId = (int) session.getAttribute("userId");
-        MyInfoResponse response = userService.getUserInfo(userId);
+        MyInfoResponse myInfoResponse = userService.getUserInfo(userId);
 
-        return ResponseEntity.ok().body(response);
+        return ResponseEntity.ok().body(myInfoResponse);
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
-            HttpServletRequest request
+            HttpServletRequest httpServletRequest
     ){
-        HttpSession session = request.getSession(false);
+        HttpSession session = httpServletRequest.getSession(false);
 
         if(session == null || session.getAttribute("userId") == null) {
             return ResponseEntity.status(401).build();
@@ -91,24 +93,24 @@ public class UserController {
 
     @PatchMapping
     public ResponseEntity<Void> updateUserInfo(
-            HttpServletRequest request,
-            @RequestBody MyInfoResponse myInfoResponse
+            HttpServletRequest httpServletRequest,
+            @Valid @RequestBody UserUpdateRequedst userUpdateRequedst
     ){
-        HttpSession session = request.getSession(false);
+        HttpSession session = httpServletRequest.getSession(false);
         if(session == null || session.getAttribute("userId") == null) {
             return ResponseEntity.status(401).build();
         }
         int userId = (int) session.getAttribute("userId");
-        userService.updateUserInfo(userId, myInfoResponse);
+        userService.updateUserInfo(userId, userUpdateRequedst);
         return ResponseEntity.ok().build();
     }
 
     // 유저 탈퇴 기능
     @DeleteMapping
     public ResponseEntity<Void> deleteUser(
-            HttpServletRequest request
+            HttpServletRequest httpServletRequest
     ){
-        HttpSession session = request.getSession(false);
+        HttpSession session = httpServletRequest.getSession(false);
         if(session == null || session.getAttribute("userId") == null) {
             return ResponseEntity.status(401).build();
         }

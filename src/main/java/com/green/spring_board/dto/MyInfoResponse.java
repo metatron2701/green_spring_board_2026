@@ -11,5 +11,6 @@ import lombok.Setter;
 @Setter
 public class MyInfoResponse {
     private String email;
+
     private String nickname;
 }

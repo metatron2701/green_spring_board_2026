@@ -1,10 +1,14 @@
 package com.green.spring_board.controller;
 
+import com.green.spring_board.dto.BoardResponse;
+import com.green.spring_board.dto.BoardUpdateRequest;
 import com.green.spring_board.exceptions.ResourceNotFoundException;
 import com.green.spring_board.exceptions.UserRequestException;
 import com.green.spring_board.dto.BoardCreateRequest;
-import com.green.spring_board.entity.Board;
 import com.green.spring_board.service.BoardService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +25,7 @@ public class BoardController {
 
     // 전체 조회
     @GetMapping
-    public ResponseEntity<List<Board>> getBoards(){
+    public ResponseEntity<List<BoardResponse>> getBoards(){
         return ResponseEntity.ok(
             boardService.getAllBoards()
         );
@@ -29,13 +33,13 @@ public class BoardController {
 
     // 상세 조회
     @GetMapping("/{id}")
-    public ResponseEntity<Board> getBoardDetail(@PathVariable int id){
+    public ResponseEntity<BoardResponse> getBoardDetail(@PathVariable int id){
         try {
-            Board board = boardService.getBoard(id);
-            if(board == null){
+            BoardResponse boardResponse = boardService.getBoard(id);
+            if(boardResponse == null){
                 return ResponseEntity.notFound().build();
             }
-            return ResponseEntity.ok(board);
+            return ResponseEntity.ok(boardResponse);
         } catch (ResourceNotFoundException e){
             // 게시글을 못 찾았을 때 (404)
             return ResponseEntity.notFound().build();
@@ -48,9 +52,20 @@ public class BoardController {
 
     // 삽입
     @PostMapping
-    public ResponseEntity<Void> createBoard(@RequestBody BoardCreateRequest boardCreateRequest) {
+    public ResponseEntity<Void> createBoard(
+            @Valid @RequestBody BoardCreateRequest boardCreateRequest,
+            HttpServletRequest httpServletRequest
+    ){
         try{
-            int newBoardId = boardService.createBoard(boardCreateRequest);
+            HttpSession session = httpServletRequest.getSession(false);
+
+            if(session == null || session.getAttribute("userId") == null){
+                return ResponseEntity.status(401).build();
+            }
+
+            //2. 세션에서 유저 아이디 뽑아옴
+            int userId = (int)session.getAttribute("userId");
+            int newBoardId = boardService.createBoard(boardCreateRequest, userId);
             URI location = URI.create("/api/board/" + newBoardId);
 
             return ResponseEntity.created(location).build();
@@ -66,15 +81,14 @@ public class BoardController {
     @PatchMapping("/{id}")
     public ResponseEntity<Void> updateBoard(
             @PathVariable int id,
-            @RequestBody BoardCreateRequest boardCreateRequest
+            @Valid @RequestBody BoardUpdateRequest boardUpdateRequest
     ){
         try{
-            boardService.updateBoard(id, boardCreateRequest);
+            boardService.updateBoard(id, boardUpdateRequest);
             return ResponseEntity.ok().build();
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
     }
