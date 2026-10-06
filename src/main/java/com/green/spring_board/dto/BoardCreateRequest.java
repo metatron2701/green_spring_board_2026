@@ -12,11 +12,11 @@ import lombok.Setter;
 @Getter
 @Setter
 public class BoardCreateRequest {
-    @NotBlank // 비어있으면 안된다는 의미
-    @Size(min = 10, max = 50) // 최소 길이, 최대 길이
+    @NotBlank
+    @Size(min = 10, max = 50) // 10자 이상, 50자 이하
     private String title;
 
     @NotBlank
-    @Size(min = 10)
+    @Size(min = 10) // 10자 이상
     private String content;
 }

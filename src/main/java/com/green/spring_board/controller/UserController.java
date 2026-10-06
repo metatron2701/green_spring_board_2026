@@ -1,18 +1,15 @@
 package com.green.spring_board.controller;
 
-import com.green.spring_board.dto.LoginRequest;
-import com.green.spring_board.dto.MyInfoResponse;
-import com.green.spring_board.dto.SignupRequest;
-import com.green.spring_board.dto.UserUpdateRequedst;
-import com.green.spring_board.exceptions.ResourceConflictException;
-import com.green.spring_board.exceptions.ResourceNotFoundException;
+import com.green.spring_board.dto.*;
 import com.green.spring_board.exceptions.UnauthenticatedException;
-import com.green.spring_board.exceptions.UserRequestException;
+import com.green.spring_board.repository.UserRepository;
+import com.green.spring_board.service.BoardService;
 import com.green.spring_board.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,98 +18,82 @@ import org.springframework.web.bind.annotation.*;
 @AllArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final UserRepository userRepository;
+    private final BoardService boardService;
 
     @PostMapping("/signup")
-    public ResponseEntity<Void> signup(@Valid @RequestBody SignupRequest signupRequest) {
-        try{
-            userService.signup(signupRequest);
-            return ResponseEntity.ok().build();
-        } catch (ResourceConflictException e){
-            return ResponseEntity.status(409).build();
-        } catch (UserRequestException e){
-            return ResponseEntity.badRequest().build();
-        } catch (Exception e){
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
-        }
+    public ResponseEntity<ApiResponse<Void>> signup(@Valid @RequestBody SignupRequest signupRequest) {
+        userService.signup(signupRequest);
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Void> login(
+    public ResponseEntity<ApiResponse<Void>> login(
             @Valid @RequestBody LoginRequest loginRequest,
             HttpServletRequest httpServletRequest
     ){
-        try{
-            int userId = userService.login(loginRequest);
-            HttpSession session = httpServletRequest.getSession();
-            httpServletRequest.changeSessionId();
-            session.setAttribute("userId", userId);
-            return ResponseEntity.ok().build();
+        int userId = userService.login(loginRequest);
+        HttpSession session = httpServletRequest.getSession();
+        httpServletRequest.changeSessionId();
+        session.setAttribute("userId", userId);
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
 
-        }catch (ResourceNotFoundException e){
-            return ResponseEntity.notFound().build();
-        }catch (UnauthenticatedException e){
-            return ResponseEntity.status(401).build();
-        }catch (Exception e){
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            HttpServletRequest request
+    ){
+        HttpSession session = request.getSession(false);
+
+        if(session == null || session.getAttribute("userId") == null) {
+            throw new UnauthenticatedException("로그인이 필요합니다.");
         }
+
+        session.invalidate();
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 
     @GetMapping("/me")
-    public ResponseEntity<MyInfoResponse> getCurrentUser(
+    public ResponseEntity<ApiResponse<MyInfoResponse>> getCurrentUser(
             HttpServletRequest httpServletRequest
     ){
         // 1. 이 사람의 세션을 가져옴
         HttpSession session = httpServletRequest.getSession(false);
 
         if(session == null || session.getAttribute("userId") == null) {
-            return ResponseEntity.status(401).build();
+            throw new UnauthenticatedException("로그인이 필요합니다.");
         }
 
         // 2. 세션에서 유저 아이디 뽑아옴
         int userId = (int) session.getAttribute("userId");
-        MyInfoResponse myInfoResponse = userService.getUserInfo(userId);
+        MyInfoResponse response = userService.getUserInfo(userId);
 
-        return ResponseEntity.ok().body(myInfoResponse);
-    }
-
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout(
-            HttpServletRequest httpServletRequest
-    ){
-        HttpSession session = httpServletRequest.getSession(false);
-
-        if(session == null || session.getAttribute("userId") == null) {
-            return ResponseEntity.status(401).build();
-        }
-
-        session.invalidate();
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().body(ApiResponse.ok(response));
     }
 
     @PatchMapping
-    public ResponseEntity<Void> updateUserInfo(
-            HttpServletRequest httpServletRequest,
-            @Valid @RequestBody UserUpdateRequedst userUpdateRequedst
+    public ResponseEntity<ApiResponse<Void>> updateUserInfo(
+            HttpServletRequest request,
+            @Valid @RequestBody UserUpdateRequest userUpdateRequest
+
     ){
-        HttpSession session = httpServletRequest.getSession(false);
+        HttpSession session = request.getSession(false);
         if(session == null || session.getAttribute("userId") == null) {
-            return ResponseEntity.status(401).build();
+            throw new UnauthenticatedException("로그인이 필요합니다.");
         }
         int userId = (int) session.getAttribute("userId");
-        userService.updateUserInfo(userId, userUpdateRequedst);
-        return ResponseEntity.ok().build();
+        userService.updateUserInfo(userId, userUpdateRequest);
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 
     // 유저 탈퇴 기능
     @DeleteMapping
-    public ResponseEntity<Void> deleteUser(
-            HttpServletRequest httpServletRequest
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            HttpServletRequest request
     ){
-        HttpSession session = httpServletRequest.getSession(false);
+        HttpSession session = request.getSession(false);
         if(session == null || session.getAttribute("userId") == null) {
-            return ResponseEntity.status(401).build();
+            throw new UnauthenticatedException("로그인이 필요합니다.");
         }
         int userId = (int) session.getAttribute("userId");
 
@@ -121,6 +102,6 @@ public class UserController {
         // 2. 세션 비활성화
         session.invalidate();
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 }

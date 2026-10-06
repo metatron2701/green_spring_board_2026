@@ -5,7 +5,6 @@ import com.green.spring_board.dto.BoardUpdateRequest;
 import com.green.spring_board.entity.User;
 import com.green.spring_board.exceptions.ResourceNotFoundException;
 import com.green.spring_board.exceptions.UnauthenticatedException;
-import com.green.spring_board.exceptions.UserRequestException;
 import com.green.spring_board.dto.BoardCreateRequest;
 import com.green.spring_board.repository.BoardRepository;
 import com.green.spring_board.entity.Board;
@@ -25,9 +24,15 @@ public class BoardService {
 
     // 전체 조회
     public List<BoardResponse> getAllBoards() {
+        // List<Board> -> List<BoardResponse> 형태로 변환 후 반환
+        List<Board> boards = boardRepository.findAll();
+
+        // 1. List<BoardResponse> 형태의 빈 리스트 생성
         List<BoardResponse> boardResponses = new ArrayList<>();
 
-        for (Board board : boardRepository.findAll()) {
+        // 2. Board 개수만큼 반복하며 new BoardResponse 생성
+        for (Board board : boards) {
+            // 3. 1번에서 만든 리스트에 추가
             boardResponses.add(
                     new BoardResponse(
                             board.getId(),
@@ -41,8 +46,9 @@ public class BoardService {
                     )
             );
         }
-
         return boardResponses;
+
+
     }
 
     // 상세 조회
@@ -54,6 +60,8 @@ public class BoardService {
         }
         Board board = optionalBoard.get();
 
+        User user = board.getUser();
+        System.out.println(user.getNickname());
         board.setHits(board.getHits() + 1);
         boardRepository.save(board);
         return new BoardResponse(
@@ -69,15 +77,10 @@ public class BoardService {
     }
 
     public int createBoard(BoardCreateRequest boardCreateRequest, Integer userId) {
-        if (boardCreateRequest.getTitle() != null && !boardCreateRequest.getTitle().isBlank()){
-            throw new UserRequestException("잘못된 입력값 입니다.");
-        }
-        if(boardCreateRequest.getContent() != null && !boardCreateRequest.getContent().isBlank()) {
-            throw new UserRequestException("잘못된 입력값 입니다.");
-        }
-
+        // userId 유효성 체크 (해당 userId의 유저가 정상적으로 존재하는지)
+        // TODO :: 이후 삭제/탈퇴 유저에 대한 검증도 추가 필요
         Optional<User> user = userRepository.findById(userId);
-        if(user.isEmpty()) {
+        if (user.isEmpty()) {
             throw new UnauthenticatedException("로그인한 사용자를 찾을 수 없습니다.");
         }
 
@@ -85,7 +88,6 @@ public class BoardService {
         board.setTitle(boardCreateRequest.getTitle());
         board.setContent(boardCreateRequest.getContent());
         board.setUser(user.get());
-
         Board savedBoard = boardRepository.save(board);
 
         return savedBoard.getId();
