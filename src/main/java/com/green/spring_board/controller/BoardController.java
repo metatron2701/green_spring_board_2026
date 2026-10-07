@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,33 +22,56 @@ public class BoardController {
     private final BoardService boardService;
     // 전체 조회
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BoardResponse>>> getBoards(){
+    public ResponseEntity<ApiResponse<List<BoardResponse>>> getBoards(
+            HttpServletRequest httpServletRequest
+    ){
+        HttpSession httpSession = httpServletRequest.getSession(false);
+
+        int userId = -1;
+        if(httpSession != null && httpSession.getAttribute("userId") != null) {
+            userId = (int) httpSession.getAttribute("userId");
+        }
+
         return ResponseEntity.ok(
-            ApiResponse.ok(boardService.getAllBoards())
+            ApiResponse.ok(boardService.getAllBoards(userId))
         );
     }
 
     // 상세 조회
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<BoardResponse>> getBoardDetail(@PathVariable int id){
-        BoardResponse board = boardService.getBoard(id);
+    public ResponseEntity<ApiResponse<BoardResponse>> getBoardDetail(
+            @PathVariable int id,
+            HttpServletRequest httpServletRequest
+    ){
+        HttpSession httpSession = httpServletRequest.getSession(false);
+
+        int userId = -1;
+        if(httpSession != null && httpSession.getAttribute("userId") != null) {
+            userId = (int) httpSession.getAttribute("userId");
+        }
+
+        BoardResponse board = boardService.getBoard(id, userId);
         return ResponseEntity.ok(
                 ApiResponse.ok(board)
         );
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<ApiResponse<List<UserBoard>>> getUserBoard(
+    @GetMapping("/my-boards")
+    public ResponseEntity<ApiResponse<List<BoardResponse>>> getMyBoards(
             HttpServletRequest httpServletRequest
     ){
-        HttpSession session = httpServletRequest.getSession(false);
-        if(session == null || session.getAttribute("userId") == null) {
-            throw new UnauthenticatedException("로그인이 필요합니다.");
-        }
-        int userId = (int) session.getAttribute("userId");
+        HttpSession httpSession = httpServletRequest.getSession(false);
 
-        List<UserBoard> userBoard = boardService.getUserBoard(userId);
-        return ResponseEntity.ok(ApiResponse.ok(userBoard));
+        int userId = -1;
+        if(httpSession != null && httpSession.getAttribute("userId") != null) {
+            userId = (int) httpSession.getAttribute("userId");
+        }
+
+        List<BoardResponse> response = boardService.getMyBoards(userId);
+
+        return ResponseEntity.ok(
+                ApiResponse.ok(response)
+        );
     }
 
     // 삽입
@@ -79,7 +103,7 @@ public class BoardController {
         if(session == null || session.getAttribute("userId") == null) {
             throw new UnauthenticatedException("로그인이 필요합니다.");
         }
-        // TODO 18 :: 본인 확인
+
         int userId = (int) session.getAttribute("userId");
         boardService.updateBoard(id, boardUpdateRequest, userId);
         return ResponseEntity.ok(ApiResponse.ok());
@@ -99,5 +123,35 @@ public class BoardController {
         int userId = (int) session.getAttribute("userId");
         boardService.deleteBoard(id, userId);
         return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @PostMapping("/like/{id}")
+    public ResponseEntity<ApiResponse<Void>> likeBoard(
+            @PathVariable int id,
+            HttpServletRequest httpServletRequest
+    ){
+        HttpSession httpSession = httpServletRequest.getSession(false);
+        if(httpSession == null || httpSession.getAttribute("userId") == null) {
+            throw new UnauthenticatedException("로그인이 필요합니다.");
+        }
+
+        int userId = (int) httpSession.getAttribute("userId");
+
+        boardService.pressLike(id, userId);
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @GetMapping("/like/{id}")
+    public ResponseEntity<ApiResponse<LikeDetailResponse>> viewLikeDetails(
+            @PathVariable int id,
+            HttpServletRequest httpServletRequest
+    ){
+        HttpSession httpSession = httpServletRequest.getSession(false);
+        if(httpSession == null || httpSession.getAttribute("userId") == null) {
+            throw new UnauthenticatedException("로그인이 필요합니다.");
+        }
+
+        LikeDetailResponse likeDetailResponse = boardService.getLikeDetails(id);
+        return ResponseEntity.ok(ApiResponse.ok(likeDetailResponse));
     }
 }
