@@ -92,9 +92,6 @@ public class UserController {
             HttpServletRequest request
     ){
         HttpSession session = request.getSession(false);
-        if(session == null || session.getAttribute("userId") == null) {
-            throw new UnauthenticatedException("로그인이 필요합니다.");
-        }
         int userId = (int) session.getAttribute("userId");
 
         // 1. DB 삭제
