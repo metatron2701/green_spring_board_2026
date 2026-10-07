@@ -2,14 +2,11 @@ package com.green.spring_board.controller;
 
 import com.green.spring_board.dto.*;
 import com.green.spring_board.exceptions.UnauthenticatedException;
-import com.green.spring_board.repository.UserRepository;
-import com.green.spring_board.service.BoardService;
 import com.green.spring_board.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,8 +15,6 @@ import org.springframework.web.bind.annotation.*;
 @AllArgsConstructor
 public class UserController {
     private final UserService userService;
-    private final UserRepository userRepository;
-    private final BoardService boardService;
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<Void>> signup(@Valid @RequestBody SignupRequest signupRequest) {
@@ -82,7 +77,9 @@ public class UserController {
             throw new UnauthenticatedException("로그인이 필요합니다.");
         }
         int userId = (int) session.getAttribute("userId");
+
         userService.updateUserInfo(userId, userUpdateRequest);
+
         return ResponseEntity.ok(ApiResponse.ok());
     }
 

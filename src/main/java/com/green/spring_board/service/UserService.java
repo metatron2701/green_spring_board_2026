@@ -5,6 +5,7 @@ import com.green.spring_board.dto.MyInfoResponse;
 import com.green.spring_board.dto.SignupRequest;
 import com.green.spring_board.dto.UserUpdateRequest;
 import com.green.spring_board.entity.User;
+import com.green.spring_board.exceptions.AuthorizationFailureException;
 import com.green.spring_board.exceptions.ResourceConflictException;
 import com.green.spring_board.exceptions.ResourceNotFoundException;
 import com.green.spring_board.exceptions.UnauthenticatedException;
@@ -87,6 +88,10 @@ public class UserService {
         }
         User user = userOptional.get();
 
+        // 것멋
+        if (user.getId() != userId){
+            throw new AuthorizationFailureException("누구야 ㅅㅂ");
+        }
         if(userUpdateRequest.getEmail()!=null
                 && !userUpdateRequest.getEmail().isBlank()
                 && !userUpdateRequest.getEmail().equals(user.getEmail())
@@ -108,6 +113,11 @@ public class UserService {
             throw new ResourceNotFoundException("User not found");
         }
         User user = userOptional.get();
+
+        // 것멋
+        if (user.getId() != userId){
+            throw new AuthorizationFailureException("누구야 ㅅㅂ");
+        }
         userRepository.delete(user);
     }
 }

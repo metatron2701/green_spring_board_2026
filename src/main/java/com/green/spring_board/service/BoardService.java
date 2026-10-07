@@ -2,7 +2,9 @@ package com.green.spring_board.service;
 
 import com.green.spring_board.dto.BoardResponse;
 import com.green.spring_board.dto.BoardUpdateRequest;
+import com.green.spring_board.dto.UserBoard;
 import com.green.spring_board.entity.User;
+import com.green.spring_board.exceptions.AuthorizationFailureException;
 import com.green.spring_board.exceptions.ResourceNotFoundException;
 import com.green.spring_board.exceptions.UnauthenticatedException;
 import com.green.spring_board.dto.BoardCreateRequest;
@@ -76,6 +78,26 @@ public class BoardService {
         );
     }
 
+    public List<UserBoard> getUserBoard(int userId) {
+        List<Board> boards = boardRepository.findByUserId(userId);
+
+        List<UserBoard> userBoards = new ArrayList<>();
+
+        for (Board board : boards) {
+            userBoards.add(
+                    new UserBoard(
+                            board.getTitle(),
+                            board.getContent(),
+                            board.getHits(),
+                            board.getCreatedDatetime(),
+                            board.getUpdatedDatetime()
+                    )
+            );
+        }
+
+        return userBoards;
+    }
+
     public int createBoard(BoardCreateRequest boardCreateRequest, Integer userId) {
         // userId 유효성 체크 (해당 userId의 유저가 정상적으로 존재하는지)
         // TODO :: 이후 삭제/탈퇴 유저에 대한 검증도 추가 필요
@@ -93,13 +115,17 @@ public class BoardService {
         return savedBoard.getId();
     }
 
-    public void updateBoard(int id, BoardUpdateRequest boardUpdateRequest) {
+    public void updateBoard(int id, BoardUpdateRequest boardUpdateRequest, int userId) {
         Optional<Board> optionalBoards = boardRepository.findById(id);
         if(optionalBoards.isEmpty()) {
             // 게시글을 못 찾은 경우
             throw new ResourceNotFoundException("게시글을 찾을 수 없습니다.");
         }
+
         Board board = optionalBoards.get();
+        if (board.getUser().getId() != userId) {
+            throw new AuthorizationFailureException("게시글 작업 권한이 없습니다.");
+        }
 
         if(boardUpdateRequest.getTitle() != null && !boardUpdateRequest.getTitle().isBlank()) {
             board.setTitle(boardUpdateRequest.getTitle());
@@ -112,10 +138,15 @@ public class BoardService {
         boardRepository.save(board);
     }
 
-    public void deleteBoard(int id) {
-        boolean isExist = boardRepository.existsById(id);
-        if(!isExist) {
+    public void deleteBoard(int id, int userId) {
+        Optional<Board> optionalBoards = boardRepository.findById(id);
+        if(optionalBoards.isEmpty()) {
             throw new ResourceNotFoundException("게시글을 찾을 수 없습니다.");
+        }
+
+        Board board = optionalBoards.get();
+        if (board.getUser().getId() != userId) {
+            throw new AuthorizationFailureException("게시글 작업 권한이 없습니다.");
         }
         boardRepository.deleteById(id);
     }

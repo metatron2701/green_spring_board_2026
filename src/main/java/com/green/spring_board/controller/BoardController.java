@@ -1,16 +1,12 @@
 package com.green.spring_board.controller;
 
-import com.green.spring_board.dto.ApiResponse;
-import com.green.spring_board.dto.BoardCreateRequest;
-import com.green.spring_board.dto.BoardResponse;
-import com.green.spring_board.dto.BoardUpdateRequest;
+import com.green.spring_board.dto.*;
 import com.green.spring_board.exceptions.UnauthenticatedException;
 import com.green.spring_board.service.BoardService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +34,20 @@ public class BoardController {
         return ResponseEntity.ok(
                 ApiResponse.ok(board)
         );
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<List<UserBoard>>> getUserBoard(
+            HttpServletRequest httpServletRequest
+    ){
+        HttpSession session = httpServletRequest.getSession(false);
+        if(session == null || session.getAttribute("userId") == null) {
+            throw new UnauthenticatedException("로그인이 필요합니다.");
+        }
+        int userId = (int) session.getAttribute("userId");
+
+        List<UserBoard> userBoard = boardService.getUserBoard(userId);
+        return ResponseEntity.ok(ApiResponse.ok(userBoard));
     }
 
     // 삽입
@@ -70,7 +80,8 @@ public class BoardController {
             throw new UnauthenticatedException("로그인이 필요합니다.");
         }
         // TODO 18 :: 본인 확인
-        boardService.updateBoard(id, boardUpdateRequest);
+        int userId = (int) session.getAttribute("userId");
+        boardService.updateBoard(id, boardUpdateRequest, userId);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
@@ -84,16 +95,9 @@ public class BoardController {
         if(session == null || session.getAttribute("userId") == null) {
             throw new UnauthenticatedException("로그인이 필요합니다.");
         }
-        // TODO 18 :: 본인 확인
 
-        // 둘 중 어느 방법을 쓸 지는 속한 팀, 조직 컨벤션 따르기
-
-        // 삭제 성공 시 응답 방법 1.
-        // 200 + ApiResponse<Void>
-
-        // 삭제 성공 시 응답 방법 2.
-        // 204(No Content) + No Body
-        boardService.deleteBoard(id);
+        int userId = (int) session.getAttribute("userId");
+        boardService.deleteBoard(id, userId);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 }
