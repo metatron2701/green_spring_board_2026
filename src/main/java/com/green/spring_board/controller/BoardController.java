@@ -27,12 +27,13 @@ public class BoardController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "latest") String order
+
     ){
-        HttpSession httpSession = httpServletRequest.getSession(false);
+        HttpSession session = httpServletRequest.getSession(false);
 
         int userId = -1;
-        if(httpSession != null && httpSession.getAttribute("userId") != null) {
-            userId = (int) httpSession.getAttribute("userId");
+        if(session != null && session.getAttribute("userId") != null) {
+            userId = (int) session.getAttribute("userId");
         }
 
         return ResponseEntity.ok(
@@ -46,11 +47,11 @@ public class BoardController {
             @PathVariable int id,
             HttpServletRequest httpServletRequest
     ){
-        HttpSession httpSession = httpServletRequest.getSession(false);
+        HttpSession session = httpServletRequest.getSession(false);
 
         int userId = -1;
-        if(httpSession != null && httpSession.getAttribute("userId") != null) {
-            userId = (int) httpSession.getAttribute("userId");
+        if(session != null && session.getAttribute("userId") != null) {
+            userId = (int) session.getAttribute("userId");
         }
 
         BoardResponse board = boardService.getBoard(id, userId);
@@ -63,12 +64,12 @@ public class BoardController {
     public ResponseEntity<ApiResponse<List<BoardResponse>>> getMyBoards(
             HttpServletRequest httpServletRequest
     ){
-        HttpSession httpSession = httpServletRequest.getSession(false);
+        HttpSession session = httpServletRequest.getSession(false);
 
-        int userId = -1;
-        if(httpSession != null && httpSession.getAttribute("userId") != null) {
-            userId = (int) httpSession.getAttribute("userId");
+        if(session == null || session.getAttribute("userId") == null) {
+            throw new UnauthenticatedException("로그인이 필요합니다.");
         }
+        int userId = (int) session.getAttribute("userId");
 
         List<BoardResponse> response = boardService.getMyBoards(userId);
 
@@ -133,15 +134,17 @@ public class BoardController {
             @PathVariable int id,
             HttpServletRequest httpServletRequest
     ){
-        HttpSession httpSession = httpServletRequest.getSession(false);
-        if(httpSession == null || httpSession.getAttribute("userId") == null) {
+        HttpSession session = httpServletRequest.getSession(false);
+        if(session == null || session.getAttribute("userId") == null) {
             throw new UnauthenticatedException("로그인이 필요합니다.");
         }
 
-        int userId = (int) httpSession.getAttribute("userId");
+        int userId = (int) session.getAttribute("userId");
 
         boardService.pressLike(id, userId);
         return ResponseEntity.ok(ApiResponse.ok());
+
+        // 내가 이 게시글 좋아요 눌렀는지
     }
 
     @GetMapping("/like/{id}")
@@ -149,12 +152,14 @@ public class BoardController {
             @PathVariable int id,
             HttpServletRequest httpServletRequest
     ){
-        HttpSession httpSession = httpServletRequest.getSession(false);
-        if(httpSession == null || httpSession.getAttribute("userId") == null) {
+        HttpSession session = httpServletRequest.getSession(false);
+
+        if(session == null || session.getAttribute("userId") == null) {
             throw new UnauthenticatedException("로그인이 필요합니다.");
         }
 
-        LikeDetailResponse likeDetailResponse = boardService.getLikeDetails(id);
-        return ResponseEntity.ok(ApiResponse.ok(likeDetailResponse));
+        // 이 게시글에 좋아요 누른 유저들의 유저명
+        LikeDetailResponse response = boardService.getLikeDetail(id);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

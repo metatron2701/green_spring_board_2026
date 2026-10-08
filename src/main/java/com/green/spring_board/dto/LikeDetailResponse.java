@@ -7,10 +7,10 @@ import lombok.Setter;
 
 import java.util.List;
 
-@AllArgsConstructor
-@NoArgsConstructor
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class LikeDetailResponse {
-    private List<String> LikedUserNames;
+    private List<String> likedUserNames;
 }

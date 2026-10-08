@@ -11,5 +11,5 @@ import java.util.Optional;
 public interface LikeRepository extends JpaRepository<Like, Integer> {
     Optional<Like> findByUserIdAndBoardId(int userId, int boardId);
     boolean existsByUserIdAndBoardId(int userId, int boardId);
-    List<Like> findByBoardId(int id);
+    List<Like> findByBoardId(int boardId);
 }

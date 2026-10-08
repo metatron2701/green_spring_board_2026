@@ -32,7 +32,7 @@ public class BoardService {
     // 전체 조회
     public Page<BoardResponse> getAllBoards(int userId, int page, int size, String order) {
         Sort sort;
-        if (order.equals("latest")) {
+        if(order.equals("latest")) {
             sort = Sort.by(Sort.Direction.DESC, "createdDatetime");
         } else if (order.equals("likes")) {
             sort = Sort.by(Sort.Direction.DESC, "likeCount");
@@ -43,11 +43,10 @@ public class BoardService {
         }
 
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Board> boards = boardRepository.findAll(pageable);
+        Page<Board> boards = boardRepository.findByIsDeletedFalse(pageable);
 
         List<BoardResponse> boardResponses = new ArrayList<>();
 
-        // 2. Board 개수만큼 반복하며 new BoardResponse 생성
         for (Board board : boards) {
             // 3. 1번에서 만든 리스트에 추가
             boardResponses.add(
@@ -57,7 +56,7 @@ public class BoardService {
                             board.getContent(),
                             board.getHits(),
                             board.getLikeCount(),
-                            userId != -1 && likeRepository.existsByUserIdAndBoardId(userId, board.getId()),
+                            (userId == -1) ? false : likeRepository.existsByUserIdAndBoardId(userId, board.getId()),
                             board.getUser().getId(),
                             board.getUser().getNickname(),
                             board.getCreatedDatetime(),
@@ -67,6 +66,7 @@ public class BoardService {
         }
 
         return new PageImpl<>(boardResponses, pageable, boards.getTotalElements());
+
     }
 
     // 상세 조회
@@ -77,6 +77,10 @@ public class BoardService {
             throw new ResourceNotFoundException("요청한 게시글을 찾지 못했습니다.");
         }
         Board board = optionalBoard.get();
+
+        if(board.isDeleted()){
+            throw new ResourceNotFoundException("삭제된 게시글입니다.");
+        }
 
         User user = board.getUser();
         System.out.println(user.getNickname());
@@ -89,7 +93,7 @@ public class BoardService {
                 board.getContent(),
                 board.getHits(),
                 board.getLikeCount(),
-                userId != -1 && likeRepository.existsByUserIdAndBoardId(userId, board.getId()),
+                (userId == -1) ? false : likeRepository.existsByUserIdAndBoardId(userId, board.getId()),
                 board.getUser().getId(),
                 board.getUser().getNickname(),
                 board.getCreatedDatetime(),
@@ -98,7 +102,7 @@ public class BoardService {
     }
 
     public List<BoardResponse> getMyBoards(int userId){
-        List<Board> boards = boardRepository.findByUserId(userId);
+        List<Board> boards = boardRepository.findByUserIdAndIsDeletedFalse(userId);
 
         // 1. List<BoardResponse> 형태의 빈 리스트 생성
         List<BoardResponse> boardResponses = new ArrayList<>();
@@ -113,7 +117,7 @@ public class BoardService {
                             board.getContent(),
                             board.getHits(),
                             board.getLikeCount(),
-                            userId != -1 && likeRepository.existsByUserIdAndBoardId(userId, board.getId()),
+                            likeRepository.existsByUserIdAndBoardId(userId, board.getId()),
                             board.getUser().getId(),
                             board.getUser().getNickname(),
                             board.getCreatedDatetime(),
@@ -177,7 +181,8 @@ public class BoardService {
             throw new AuthorizationFailureException("게시글 작업 권한이 없습니다.");
         }
 
-        boardRepository.deleteById(id);
+        board.setDeleted(true);
+        boardRepository.save(board);
     }
 
     public void pressLike(int id, int userId) {
@@ -203,27 +208,28 @@ public class BoardService {
             likeRepository.save(like);
 
             board.setLikeCount(board.getLikeCount() + 1);
+            boardRepository.save(board);
         } else {
             // 있으면 좋아요 삭제
             Like like = likeOptional.get();
             likeRepository.deleteById(like.getId());
 
-            board.setLikeCount(Math.max(0, board.getLikeCount() - 1));
+            board.setLikeCount(board.getLikeCount() - 1);
+            boardRepository.save(board);
         }
-
-        boardRepository.save(board);
     }
 
-    public LikeDetailResponse getLikeDetails(int id) {
+    public LikeDetailResponse getLikeDetail(int id) {
+        // 1. 이 게시글에 좋아요 누른 유저 정보들을 Like 테이블에서 싹 가져옴
         List<Like> likes = likeRepository.findByBoardId(id);
-
+        // 2. 걔네 닉네임 하나하나 뽑아서, LikeDetailResponse 에 집어넣음
         LikeDetailResponse likeDetailResponse = new LikeDetailResponse();
         List<String> nicknames = new ArrayList<>();
-        for (Like like : likes) {
+        for(Like like : likes) {
             nicknames.add(like.getUser().getNickname());
         }
         likeDetailResponse.setLikedUserNames(nicknames);
-
+        // 3. 끝
         return likeDetailResponse;
     }
 }

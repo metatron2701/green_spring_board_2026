@@ -5,10 +5,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class CommentCreateRequest {
+public class CommentResponse {
+    private int commentId;
+    private String nickname;
     private String content;
+    private LocalDateTime commentDate;
 }
