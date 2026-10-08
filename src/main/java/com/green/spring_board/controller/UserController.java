@@ -17,8 +17,6 @@ import org.springframework.web.bind.annotation.*;
 @AllArgsConstructor
 public class UserController {
     private final UserService userService;
-    private final UserRepository userRepository;
-    private final BoardService boardService;
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<Void>> signup(@Valid @RequestBody SignupRequest signupRequest) {
@@ -77,9 +75,6 @@ public class UserController {
 
     ){
         HttpSession session = request.getSession(false);
-        if(session == null || session.getAttribute("userId") == null) {
-            throw new UnauthenticatedException("로그인이 필요합니다.");
-        }
         int userId = (int) session.getAttribute("userId");
         userService.updateUserInfo(userId, userUpdateRequest);
         return ResponseEntity.ok(ApiResponse.ok());
